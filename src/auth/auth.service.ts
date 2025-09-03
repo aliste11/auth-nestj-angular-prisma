@@ -1,8 +1,35 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
-  getUser() {
-    return [];
+  constructor(private readonly prismaService: PrismaService) {}
+  async getUser() {
+    return await this.prismaService.user.findMany();
+  }
+
+  async signUp(email: string, password: string) {
+    try {
+      const userFound = await this.prismaService.user.findUnique({
+        where: {
+          email,
+        },
+      });
+
+      if (userFound) throw new BadRequestException('el usuario ya existe');
+
+      const newUser = await this.prismaService.user.create({
+        data: {
+          email,
+          password,
+        },
+      });
+      return newUser;
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new Error(error);
+    }
   }
 }
